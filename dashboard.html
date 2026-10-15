@@ -290,7 +290,7 @@
       const remAfter = p.remaining - 1;
       let next;
       if (zeroAfter <= 0) next = '오늘로 모든 수강생이 한 번 이상 질문하게 됩니다.';
-      else if (remAfter > 0) next = '현재 인원 기준, 남은 ' + remAfter + '회 동안 회당 ' + Math.ceil(zeroAfter / remAfter) + '명 이상 필요합니다.';
+      else if (remAfter > 0) next = '현재 인원 기준, 남은 ' + remAfter + '회 동안 회당 ' + Math.ceil(zeroAfter / remAfter) + '명 이상 질문이 필요합니다.';
       else next = '오늘이 마지막 수업입니다.';
       set(p.firstToday + ' / ' + p.target + '명', [status, next], p.firstToday / p.target, p.firstToday >= p.target);
     }
