@@ -210,7 +210,8 @@
     // onRetry(n, max): 다시 시도할 때마다 불린다 (화면에 진행 상황 표시용)
     async function callWith(onRetry, fn, ...args) {
       if (window.DEMO_API) return window.DEMO_API(fn, args);
-      const readOnly = /^get/.test(fn) || fn === 'linkStudent';
+      // 모든 요청이 두 번 와도 안전하다 (제출은 고유 번호로 중복 방지, 삭제·상태 변경은 같은 결과) → 시간 초과도 재시도
+      const readOnly = true;
       for (let attempt = 0; ; attempt++) {
         let out = null, netErr = false, timedOut = false;
         const ctrl = new AbortController();
@@ -289,7 +290,7 @@
       const remAfter = p.remaining - 1;
       let next;
       if (zeroAfter <= 0) next = '오늘로 모든 수강생이 한 번 이상 질문하게 됩니다.';
-      else if (remAfter > 0) next = '이대로 끝나면 다음 수업부터 회당 최소 ' + Math.ceil(zeroAfter / remAfter) + '명';
+      else if (remAfter > 0) next = '현재 인원으로 마무리하실 경우, 남은 ' + remAfter + '회 수업에서 회당 ' + Math.ceil(zeroAfter / remAfter) + '명 이상의 첫 질문자 선정이 필요합니다.';
       else next = '오늘이 마지막 수업입니다.';
       set(p.firstToday + ' / ' + p.target + '명', [status, next], p.firstToday / p.target, p.firstToday >= p.target);
     }

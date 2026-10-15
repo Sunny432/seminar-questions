@@ -124,7 +124,8 @@
     // onRetry(n, max): 다시 시도할 때마다 불린다 (화면에 진행 상황 표시용)
     async function callWith(onRetry, fn, ...args) {
       if (window.DEMO_API) return window.DEMO_API(fn, args);
-      const readOnly = /^get/.test(fn) || fn === 'linkStudent';
+      // 모든 요청이 두 번 와도 안전하다 (제출은 고유 번호로 중복 방지, 삭제·상태 변경은 같은 결과) → 시간 초과도 재시도
+      const readOnly = true;
       for (let attempt = 0; ; attempt++) {
         let out = null, netErr = false, timedOut = false;
         const ctrl = new AbortController();
@@ -299,7 +300,9 @@
       updateCount();
       setMsg('ask-msg', '제출 중…');
       try {
-        state = await callWith(retryNote('ask-msg'), 'submitQuestion', $('q').value, sid(), sname());
+        // 재시도해도 같은 번호를 보내므로 서버에 한 번만 들어간다
+        const reqId = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+        state = await callWith(retryNote('ask-msg'), 'submitQuestion', $('q').value, sid(), sname(), reqId);
         $('q').value = '';
         render();
         setMsg('ask-msg', '질문이 접수되었습니다. 수업 중 교수님이 확인하실 예정입니다.', 'ok');
