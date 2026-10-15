@@ -325,13 +325,19 @@
       }
     });
 
-    // 접수 시작/마감을 주기적으로 확인. 화면이 꺼져 있거나 다른 앱을 보는 동안은 쉰다.
-    // 상태가 바뀌었을 때만 전체를 다시 불러온다 (입력 중인 내용은 유지됨).
+    // 10초마다 접수 상태와 내 질문 상태(선정·취소·완료)를 확인한다. 서버는 캐시에서 읽으므로 가볍다.
+    // 화면이 꺼져 있거나 다른 앱을 보는 동안은 쉬고, 바뀐 것이 있을 때만 다시 그린다 (입력 중인 내용은 유지됨).
     async function poll() {
-      if (!state || busy || document.hidden) return;
+      if (!state || busy || document.hidden || armedId) return;
+      const mySeq = seq;
       try {
-        const open = await call('getIntakeStatus');
-        if (open !== state.open) load();
+        const next = await call('getStudentInit', sid(), sname());
+        if (mySeq !== seq || busy || armedId) return;
+        if (me && !next.student) return load(); // 저장된 학번이 안 보이면 load 가 한 번 더 확인한다
+        const view = s => JSON.stringify([s.open, s.maxLen, s.maxPer, s.mine]);
+        if (view(next) === view(state)) return;
+        state = next;
+        render();
       } catch (e) {}
     }
     document.addEventListener('visibilitychange', () => { if (!document.hidden && state) load(); });
