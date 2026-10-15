@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>질문 제출</title>
+  <style>
+    :root {
+      --bg: #f4f5f7; --card: #fff; --ink: #1d2433; --muted: #6b7280; --line: #e3e6eb;
+      --accent: #1f4fd1; --accent-ink: #fff; --ok: #0f7b4b; --ok-bg: #e7f6ee;
+      --warn: #8a5a00; --warn-bg: #fff4dc; --err: #b42318; --err-bg: #fdecea;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--bg); color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+      font-size: 16px; line-height: 1.55;
+    }
+    .wrap { max-width: 520px; margin: 0 auto; padding: 24px 16px 48px; }
+    header { margin-bottom: 16px; }
+    .eyebrow { margin: 0; color: var(--muted); font-size: 14px; }
+    h1 { margin: 2px 0 4px; font-size: 26px; }
+    .who { margin: 0; color: var(--muted); font-size: 14px; min-height: 1em; }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 20px; margin-bottom: 14px; }
+    h2 { font-size: 17px; margin: 0 0 8px; }
+    label { display: block; font-weight: 600; margin: 12px 0 6px; }
+    .hint { color: var(--muted); font-weight: 400; font-size: 14px; }
+    input, textarea {
+      width: 100%; font: inherit; color: inherit; padding: 12px; border: 1px solid var(--line);
+      border-radius: 10px; background: #fff;
+    }
+    textarea { resize: vertical; min-height: 110px; }
+    input:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: transparent; }
+    .row { display: flex; justify-content: space-between; margin-top: 6px; font-size: 14px; }
+    .count.over { color: var(--err); font-weight: 700; }
+    button.primary {
+      width: 100%; margin-top: 14px; padding: 14px; font: inherit; font-weight: 700;
+      border: 0; border-radius: 10px; background: var(--accent); color: var(--accent-ink); cursor: pointer;
+    }
+    button.primary:disabled { opacity: .45; cursor: not-allowed; }
+    .msg { margin: 10px 0 0; font-size: 14px; min-height: 1em; }
+    .msg.ok { color: var(--ok); } .msg.err { color: var(--err); }
+    .notice { background: var(--warn-bg); color: var(--warn); border-radius: 10px; padding: 12px; font-size: 15px; margin-bottom: 6px; }
+    .error { background: var(--err-bg); border-color: #f5c2bd; color: var(--err); }
+    ul { list-style: none; padding: 0; margin: 0; }
+    li { padding: 10px 0; border-top: 1px solid var(--line); }
+    li:first-child { border-top: 0; }
+    .tag { display: inline-block; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 99px; background: var(--line); color: var(--muted); margin-right: 6px; }
+    .tag.sel { background: var(--ok-bg); color: var(--ok); }
+    .time { color: var(--muted); font-size: 13px; }
+    .linkbtn { font: inherit; font-size: 13px; color: var(--accent); background: none; border: 0; padding: 0 0 0 6px; cursor: pointer; text-decoration: underline; }
+    li { display: flex; gap: 10px; align-items: flex-start; }
+    li .body { flex: 1; }
+    button.del { flex: none; font: inherit; font-size: 13px; padding: 4px 10px; border-radius: 8px; border: 1px solid var(--line); background: #fff; color: var(--muted); cursor: pointer; }
+    button.del.arm { background: var(--err); border-color: var(--err); color: #fff; }
+  </style>
+  <!-- 내 컴퓨터에서 열면(localhost/파일) 가짜 서버로 동작하는 데모 모드 -->
+  <script>if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || location.protocol === 'file:') document.write('<script src="demo-mock.js"><\/script>');</script>
+</head>
+<body>
+  <main class="wrap">
+    <header>
+      <p class="eyebrow" id="course">&nbsp;</p>
+      <h1>질문 제출</h1>
+      <p class="who"><span id="who"></span> <button id="switch" class="linkbtn" hidden>학번 변경</button></p>
+    </header>
+
+    <section id="loading" class="card">불러오는 중…</section>
+    <section id="error" class="card error" hidden></section>
+
+    <section id="link" class="card" hidden>
+      <h2>학번과 이름을 입력해 주세요</h2>
+      <p class="hint">수강생 명단과 대조합니다. 확인되면 이 기기에 저장되어 다음 수업부터는 바로 질문할 수 있습니다. 다른 사람의 학번으로 제출하지 마세요.</p>
+      <label for="sid">학번</label>
+      <input id="sid" inputmode="numeric" autocomplete="off" placeholder="예: 2024-12345">
+      <label for="sname">이름</label>
+      <input id="sname" autocomplete="name">
+      <button id="link-btn" class="primary">확인</button>
+      <p class="msg" id="link-msg"></p>
+    </section>
+
+    <section id="ask" class="card" hidden>
+      <div id="closed" class="notice" hidden>지금은 질문 접수 시간이 아닙니다. 접수가 시작되면 이 화면이 자동으로 열립니다.</div>
+      <label for="q">질문 요지 <span class="hint">· 핵심만 간결하게</span></label>
+      <textarea id="q" placeholder="예: 촉매 가격 변동이 공정 경제성에 미치는 영향은 어느 정도인가요?"></textarea>
+      <div class="row"><span id="remain" class="hint"></span><span id="count" class="count"></span></div>
+      <button id="submit" class="primary">제출</button>
+      <p class="msg" id="ask-msg"></p>
+    </section>
+
+    <section id="mine" class="card" hidden>
+      <h2>오늘 제출한 질문</h2>
+      <ul id="mine-list"></ul>
+    </section>
+  </main>
+
+  <script>
+    const $ = id => document.getElementById(id);
+    let state = null;
+    let busy = false;
+
+    // 확인된 학번·이름은 이 기기에 저장해 두고 요청마다 함께 보낸다 (저장이 막힌 브라우저면 매번 입력)
+    const ME_KEY = 'seminar-question-me';
+    let me = readMe();
+    function readMe() {
+      try { const v = JSON.parse(localStorage.getItem(ME_KEY)); return v && v.sid && v.name ? v : null; } catch (e) { return null; }
+    }
+    function saveMe(v) {
+      me = v;
+      try { v ? localStorage.setItem(ME_KEY, JSON.stringify(v)) : localStorage.removeItem(ME_KEY); } catch (e) {}
+    }
+    const sid = () => (me ? me.sid : '');
+    const sname = () => (me ? me.name : '');
+
+    // Apps Script 웹앱(Code.gs 의 doPost)에 요청. text/plain 본문이라 CORS 사전 요청이 없다.
+    const API_URL = 'https://script.google.com/macros/s/AKfycbyMjR0euIFOc_cl6aO2qeAB9EEREH8fs4KpbxBGlcxJEty3IWT3nxEQmZ3P5f3h2RA6hQ/exec';
+    async function call(fn, ...args) {
+      if (window.DEMO_API) return window.DEMO_API(fn, args);
+      let out;
+      try {
+        const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ fn, args }) });
+        out = await res.json();
+      } catch (e) {
+        throw new Error('서버에 연결하지 못했습니다. 인터넷 연결을 확인하고 다시 시도해 주세요.');
+      }
+      if (!out.ok) throw new Error(out.error);
+      return out.data;
+    }
+    function errText(e) { return String((e && e.message) || e).replace(/^(Error|Exception):\s*/, ''); }
+    function esc(s) {
+      return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+    function setMsg(id, text, kind) { const el = $(id); el.textContent = text || ''; el.className = 'msg ' + (kind || ''); }
+
+    function render() {
+      $('loading').hidden = true;
+      $('course').textContent = state.course;
+      $('who').textContent = state.student ? state.student.name + ' (' + state.student.id + ')' : '';
+      $('switch').hidden = !state.student;
+
+      $('link').hidden = !!state.student;
+      $('ask').hidden = !state.student;
+      $('mine').hidden = !state.student || state.mine.length === 0;
+      if (!state.student) return;
+
+      const full = state.mine.length >= state.maxPer;
+      $('closed').hidden = state.open;
+      $('q').disabled = !state.open || full;
+      $('remain').textContent = full
+        ? '오늘 제출 가능한 질문 수(' + state.maxPer + '개)를 모두 사용했습니다.'
+        : '오늘 ' + state.mine.length + ' / ' + state.maxPer + '개 제출';
+      updateCount();
+
+      $('mine-list').innerHTML = state.mine.map(m =>
+        '<li><div class="body"><span class="tag ' + (m.label === '선정됨' ? 'sel' : '') + '">' + esc(m.label) + '</span>' +
+        '<span class="time">' + esc(m.time) + '</span><div>' + esc(m.text) + '</div></div>' +
+        (m.canDelete ? '<button class="del" data-id="' + esc(m.id) + '">삭제</button>' : '') + '</li>'
+      ).join('');
+    }
+
+    function updateCount() {
+      if (!state) return;
+      const n = $('q').value.trim().length;
+      $('count').textContent = n + ' / ' + state.maxLen;
+      $('count').classList.toggle('over', n > state.maxLen);
+      $('submit').disabled = busy || $('q').disabled || n === 0 || n > state.maxLen;
+    }
+
+    async function load() {
+      try {
+        state = await call('getStudentInit', sid(), sname());
+        $('error').hidden = true;
+        if (me && !state.student) {
+          // 명단이 바뀌어 저장된 정보가 더 이상 맞지 않는 경우
+          saveMe(null);
+          setMsg('link-msg', '저장된 학번·이름이 명단과 일치하지 않습니다. 다시 입력해 주세요.', 'err');
+        }
+        render();
+      } catch (e) {
+        $('loading').hidden = true;
+        $('error').hidden = false;
+        $('error').textContent = errText(e);
+      }
+    }
+
+    $('q').addEventListener('input', updateCount);
+
+    // 삭제는 3초 안에 두 번 눌러야 실행
+    let armedId = null, armTimer = null;
+    $('mine-list').addEventListener('click', async e => {
+      const btn = e.target.closest('button.del');
+      if (!btn) return;
+      const id = btn.dataset.id;
+      if (armedId !== id) {
+        armedId = id;
+        render();
+        const b = $('mine-list').querySelector('button.del[data-id="' + CSS.escape(id) + '"]');
+        if (b) { b.classList.add('arm'); b.textContent = '한 번 더'; }
+        clearTimeout(armTimer);
+        armTimer = setTimeout(() => { armedId = null; render(); }, 3000);
+        return;
+      }
+      armedId = null;
+      clearTimeout(armTimer);
+      btn.disabled = true;
+      busy = true;
+      try {
+        state = await call('deleteMyQuestion', id, sid(), sname());
+        render();
+        setMsg('ask-msg', '질문을 삭제했습니다.', 'ok');
+      } catch (e) {
+        setMsg('ask-msg', errText(e), 'err');
+        load();
+      } finally {
+        busy = false;
+        updateCount();
+      }
+    });
+
+    $('link-btn').addEventListener('click', async () => {
+      const inputSid = $('sid').value.trim(), inputName = $('sname').value.trim();
+      if (!inputSid || !inputName) return setMsg('link-msg', '학번과 이름을 모두 입력해 주세요.', 'err');
+      $('link-btn').disabled = true;
+      setMsg('link-msg', '확인 중…');
+      try {
+        state = await call('linkStudent', inputSid, inputName);
+        saveMe({ sid: inputSid, name: inputName });
+        setMsg('link-msg', '');
+        render();
+      } catch (e) {
+        setMsg('link-msg', errText(e), 'err');
+      } finally {
+        $('link-btn').disabled = false;
+      }
+    });
+
+    // 공용 기기이거나 잘못 입력했을 때 다른 학번으로 바꾸기
+    $('switch').addEventListener('click', () => {
+      saveMe(null);
+      state.student = null;
+      state.mine = [];
+      $('sid').value = '';
+      $('sname').value = '';
+      setMsg('link-msg', '');
+      setMsg('ask-msg', '');
+      render();
+    });
+
+    $('submit').addEventListener('click', async () => {
+      busy = true;
+      updateCount();
+      setMsg('ask-msg', '제출 중…');
+      try {
+        state = await call('submitQuestion', $('q').value, sid(), sname());
+        $('q').value = '';
+        render();
+        setMsg('ask-msg', '접수되었습니다. 교수님이 선정하면 수업 중에 호명됩니다.', 'ok');
+      } catch (e) {
+        setMsg('ask-msg', errText(e), 'err');
+      } finally {
+        busy = false;
+        updateCount();
+      }
+    });
+
+    // 접수 시작/마감을 주기적으로 확인. 화면이 꺼져 있거나 다른 앱을 보는 동안은 쉰다.
+    // 상태가 바뀌었을 때만 전체를 다시 불러온다 (입력 중인 내용은 유지됨).
+    async function poll() {
+      if (!state || busy || document.hidden) return;
+      try {
+        const open = await call('getIntakeStatus');
+        if (open !== state.open) load();
+      } catch (e) {}
+    }
+    document.addEventListener('visibilitychange', () => { if (!document.hidden && state) load(); });
+
+    load();
+    setInterval(poll, 10000);
+  </script>
+</body>
+</html>

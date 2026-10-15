@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>질문 대시보드</title>
+  <style>
+    :root {
+      --bg: #f4f5f7; --card: #fff; --ink: #1d2433; --muted: #6b7280; --line: #e3e6eb;
+      --accent: #1f4fd1; --accent-bg: #eaf0ff;
+      --ok: #0f7b4b; --ok-bg: #e7f6ee; --star: #a15c00; --star-bg: #fff1d6;
+      --err: #b42318; --err-bg: #fdecea;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--bg); color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+      font-size: 16px; line-height: 1.5;
+    }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 20px 16px 60px; }
+    button { font: inherit; cursor: pointer; }
+
+    .top { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    .top h1 { margin: 0; font-size: 22px; }
+    .top .sub { color: var(--muted); font-size: 14px; }
+    .top .controls { display: flex; gap: 8px; flex-wrap: wrap; }
+    .btn { border: 1px solid var(--line); background: var(--card); color: var(--ink); border-radius: 10px; padding: 9px 14px; font-weight: 600; }
+    .btn.open { background: var(--ok); border-color: var(--ok); color: #fff; }
+    .btn.closed { background: var(--ink); border-color: var(--ink); color: #fff; }
+    .btn.arm { background: var(--err); border-color: var(--err); color: #fff; }
+    .intake { border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; font-weight: 600; }
+    .intake.on { background: var(--ok-bg); color: var(--ok); }
+    .intake.off { background: var(--line); color: var(--muted); }
+
+    .plan { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 18px; margin-bottom: 14px; }
+    .plan-head { display: flex; flex-wrap: wrap; gap: 4px 12px; justify-content: space-between; align-items: baseline; }
+    .plan-title { font-weight: 700; }
+    .plan-sub { color: var(--muted); font-size: 14px; }
+    .plan-main { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; margin: 6px 0 8px; }
+    .plan-main b { font-size: 30px; font-variant-numeric: tabular-nums; }
+    .plan-main span { color: var(--muted); font-size: 14px; }
+    .progress { height: 10px; background: var(--line); border-radius: 99px; overflow: hidden; }
+    .progress div { height: 100%; width: 0; background: var(--accent); border-radius: 99px; transition: width .3s; }
+    .plan.met .progress div { background: var(--ok); }
+    .plan-foot { margin-top: 8px; font-size: 14px; color: var(--muted); }
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
+    .stat { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; }
+    .stat b { display: block; font-size: 24px; }
+    .stat span { color: var(--muted); font-size: 13px; }
+
+    .bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .seg { display: inline-flex; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 3px; flex-wrap: wrap; }
+    .seg button { border: 0; background: none; padding: 7px 12px; border-radius: 8px; color: var(--muted); font-weight: 600; font-size: 14px; }
+    .seg button.on { background: var(--accent-bg); color: var(--accent); }
+    select { font: inherit; font-size: 14px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); }
+
+    .q { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; margin-bottom: 10px; display: grid; grid-template-columns: 1fr auto; gap: 8px 16px; align-items: start; }
+    .q.selected { border-color: #f0c26a; box-shadow: inset 4px 0 0 #f0a500; }
+    .q.done { opacity: .6; }
+    .q.hidden-q { opacity: .45; }
+    .meta { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: baseline; }
+    .meta strong { font-size: 17px; }
+    .sid, .time { color: var(--muted); font-size: 14px; }
+    .badge { font-size: 12px; font-weight: 700; padding: 2px 9px; border-radius: 99px; background: var(--line); color: var(--muted); }
+    .badge.first { background: var(--ok-bg); color: var(--ok); }
+    .badge.today { background: var(--star-bg); color: var(--star); }
+    .text { grid-column: 1 / 2; margin: 0; font-size: 18px; line-height: 1.5; word-break: keep-all; overflow-wrap: anywhere; }
+    .actions { grid-column: 2; grid-row: 1 / 3; display: flex; flex-direction: column; gap: 6px; min-width: 110px; }
+    .actions button { border: 1px solid var(--line); background: var(--card); border-radius: 10px; padding: 8px 10px; font-weight: 600; font-size: 14px; }
+    .actions .star { background: #f0a500; border-color: #f0a500; color: #fff; }
+    .actions .ok { background: var(--ok); border-color: var(--ok); color: #fff; }
+    .empty { text-align: center; color: var(--muted); padding: 40px 0; }
+
+    table { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; font-size: 15px; }
+    th, td { padding: 9px 12px; text-align: left; border-bottom: 1px solid var(--line); }
+    th { background: #fafbfc; font-size: 13px; color: var(--muted); }
+    td.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+    .error { background: var(--err-bg); color: var(--err); border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; }
+    .live { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--ok); margin-right: 6px; vertical-align: middle; }
+    .live.stale { background: var(--err); }
+
+    .overlay { position: fixed; inset: 0; background: rgba(15, 20, 30, .7); display: flex; align-items: center; justify-content: center; z-index: 10; padding: 16px; }
+    .overlay[hidden] { display: none; }
+    .qrbox { background: #fff; border-radius: 18px; padding: 28px; text-align: center; max-width: 92vw; }
+    .qrbox h2 { margin: 0 0 6px; font-size: 26px; }
+    .qrbox p { margin: 0 0 16px; color: var(--muted); }
+    #qr { display: inline-block; }
+    #qr img, #qr canvas { width: min(60vh, 80vw) !important; height: auto !important; }
+    .qrurl { font-size: 13px; color: var(--muted); word-break: break-all; margin-top: 12px; }
+
+    @media (max-width: 640px) {
+      .stats { grid-template-columns: repeat(2, 1fr); }
+      .q { grid-template-columns: 1fr; }
+      .actions { grid-column: 1; grid-row: auto; flex-direction: row; flex-wrap: wrap; }
+      .actions button { flex: 1; }
+    }
+  </style>
+  <!-- 내 컴퓨터에서 열면(localhost/파일) 가짜 서버로 동작하는 데모 모드 -->
+  <script>if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || location.protocol === 'file:') document.write('<script src="demo-mock.js"><\/script>');</script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body data-key="<?= key ?>">
+  <main class="wrap">
+    <div class="top">
+      <div>
+        <h1 id="course">질문 대시보드</h1>
+        <div class="sub"><span class="live" id="live"></span><span id="date"></span> · <span id="updated">불러오는 중…</span></div>
+      </div>
+      <div class="controls">
+        <button class="btn" id="qr-btn">학생용 QR 띄우기</button>
+        <button class="btn closed" id="open-btn" disabled>…</button>
+      </div>
+    </div>
+
+    <div class="intake off" id="intake">…</div>
+    <div class="error" id="error" hidden></div>
+
+    <section class="plan" id="plan">
+      <div class="plan-head"><span class="plan-title">전원 질문 목표</span><span class="plan-sub" id="plan-sub"></span></div>
+      <div class="plan-main"><b id="plan-main">–</b><span id="plan-label"></span></div>
+      <div class="progress"><div id="plan-bar"></div></div>
+      <div class="plan-foot" id="plan-foot"></div>
+    </section>
+
+    <div class="stats">
+      <div class="stat"><b id="s-total">0</b><span>오늘 접수</span></div>
+      <div class="stat"><b id="s-wait">0</b><span>대기 중</span></div>
+      <div class="stat"><b id="s-sel">0</b><span>오늘 선정</span></div>
+      <div class="stat"><b id="s-zero">0</b><span>아직 선정 0회인 수강생</span></div>
+    </div>
+
+    <div class="bar">
+      <div class="seg" id="view-seg">
+        <button data-view="questions" class="on">질문</button>
+        <button data-view="roster">수강생 현황</button>
+      </div>
+    </div>
+
+    <section id="questions-view">
+      <div class="bar">
+        <div class="seg" id="filter-seg"></div>
+        <select id="sort">
+          <option value="fair">선정 횟수 적은 학생 먼저</option>
+          <option value="time">접수 순서</option>
+        </select>
+      </div>
+      <div id="list"></div>
+    </section>
+
+    <section id="roster-view" hidden>
+      <table>
+        <thead><tr><th>학번</th><th>이름</th><th class="num">지난 선정</th><th class="num">오늘 선정</th><th class="num">합계</th></tr></thead>
+        <tbody id="roster-body"></tbody>
+      </table>
+    </section>
+  </main>
+
+  <div class="overlay" id="overlay" hidden>
+    <div class="qrbox">
+      <h2>질문 제출</h2>
+      <p>휴대폰으로 찍고 학번·이름 확인 후 질문을 남겨 주세요</p>
+      <div id="qr"></div>
+      <div class="qrurl" id="qr-url"></div>
+    </div>
+  </div>
+
+  <script>
+    // Apps Script 페이지로 열면 템플릿이 key를 넣어 주고, GitHub Pages로 열면 주소의 #key=... 에서 읽는다
+    const KEY = (() => {
+      const t = document.body.dataset.key || '';
+      if (t && t.indexOf('<' + '?') < 0) return t; // '<'+'?' : Apps Script 템플릿 표기와 겹치지 않게 나눠 씀
+      return new URLSearchParams(location.hash.slice(1)).get('key') || new URLSearchParams(location.search).get('key') || '';
+    })();
+    const STATUS = { WAITING: '대기', SELECTED: '선정', DONE: '완료', HIDDEN: '숨김' };
+    // '진행 중' = 선정된 질문(위에 고정) + 대기 질문
+    const FILTERS = [
+      { key: 'active', label: '진행 중', match: q => q.status === STATUS.WAITING || q.status === STATUS.SELECTED },
+      { key: STATUS.DONE, label: '완료', match: q => q.status === STATUS.DONE },
+      { key: STATUS.HIDDEN, label: '숨김', match: q => q.status === STATUS.HIDDEN },
+      { key: 'all', label: '전체', match: () => true },
+    ];
+    const $ = id => document.getElementById(id);
+
+    let data = null;
+    let filter = 'active';
+    let pending = 0;   // 진행 중인 조작 수
+    let version = 0;   // 조작할 때마다 증가 → 조작 전에 요청한 응답은 버림
+    let inflight = false;
+    let lastOk = 0;
+    let closeArmedUntil = 0; // 마감은 3초 안에 두 번 눌러야 실행
+
+    // Apps Script 웹앱(Code.gs 의 doPost)에 요청. text/plain 본문이라 CORS 사전 요청이 없다.
+    const API_URL = 'https://script.google.com/macros/s/AKfycbyMjR0euIFOc_cl6aO2qeAB9EEREH8fs4KpbxBGlcxJEty3IWT3nxEQmZ3P5f3h2RA6hQ/exec';
+    async function call(fn, ...args) {
+      if (window.DEMO_API) return window.DEMO_API(fn, args);
+      let out;
+      try {
+        const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ fn, args }) });
+        out = await res.json();
+      } catch (e) {
+        throw new Error('서버에 연결하지 못했습니다. 인터넷 연결을 확인하고 다시 시도해 주세요.');
+      }
+      if (!out.ok) throw new Error(out.error);
+      return out.data;
+    }
+    function errText(e) { return String((e && e.message) || e).replace(/^(Error|Exception):\s*/, ''); }
+    function esc(s) {
+      return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+    function showError(msg) { $('error').hidden = !msg; $('error').textContent = msg || ''; }
+
+    function render() {
+      if (!data) return;
+      $('course').textContent = data.course;
+      $('date').textContent = data.today;
+
+      const qs = data.questions;
+      const count = s => qs.filter(q => q.status === s).length;
+      $('s-total').textContent = qs.length;
+      $('s-wait').textContent = count(STATUS.WAITING);
+      $('s-sel').textContent = count(STATUS.SELECTED) + count(STATUS.DONE);
+      $('s-zero').textContent = data.roster.filter(r => r.pastSelected + r.todaySelected === 0).length + ' / ' + data.roster.length;
+      renderPlan();
+
+      const ob = $('open-btn');
+      ob.disabled = false;
+      const armed = data.open && Date.now() < closeArmedUntil;
+      ob.className = 'btn ' + (armed ? 'arm' : data.open ? 'open' : 'closed');
+      ob.textContent = armed ? '한 번 더 누르면 마감' : data.open ? '● 접수 중 · 마감하기' : '접수 시작하기';
+      $('intake').className = 'intake ' + (data.open ? 'on' : 'off');
+      $('intake').textContent = data.open
+        ? '● 질문 접수 중 — 학생들이 지금 질문을 제출할 수 있습니다.'
+        : '접수 마감됨 — 학생 화면에서 제출이 막혀 있습니다. 질문을 받으려면 [접수 시작하기]를 누르세요.';
+
+      $('filter-seg').innerHTML = FILTERS.map(f => {
+        const n = qs.filter(f.match).length;
+        return '<button data-filter="' + f.key + '" class="' + (f.key === filter ? 'on' : '') + '">' + f.label + ' ' + n + '</button>';
+      }).join('');
+
+      renderList();
+      renderRoster();
+    }
+
+    function renderPlan() {
+      const p = data.plan;
+      const set = (main, label, sub, foot, ratio, met) => {
+        $('plan-main').textContent = main;
+        $('plan-label').textContent = label;
+        $('plan-sub').textContent = sub;
+        $('plan-foot').textContent = foot;
+        $('plan-bar').style.width = Math.round(Math.min(1, ratio) * 100) + '%';
+        $('plan').classList.toggle('met', !!met);
+      };
+      if (!p.total) return set('–', "'설정' 시트에 전체수업횟수를 입력하면 목표가 계산됩니다.", '', '', 0);
+      const sub = '남은 수업 ' + Math.max(p.remaining, 0) + '회 (오늘 포함) · 오늘 시작 기준 선정 0회 ' + p.zeroBefore + '명 / 전체 ' + data.roster.length + '명';
+      if (p.zeroBefore === 0) return set('달성', '모든 수강생이 한 번 이상 질문했습니다.', sub, '', 1, true);
+      if (p.remaining <= 0) {
+        return set(p.firstToday + ' / ' + p.zeroBefore + '명', '남은 수업 횟수가 없습니다. 선정 0회 학생을 오늘 모두 선정해야 합니다.', sub, '', p.firstToday / p.zeroBefore, p.firstToday >= p.zeroBefore);
+      }
+      const zeroAfter = p.zeroBefore - p.firstToday;
+      const remAfter = p.remaining - 1;
+      let foot;
+      if (zeroAfter <= 0) foot = '오늘로 모든 수강생이 한 번 이상 질문하게 됩니다.';
+      else if (remAfter > 0) foot = '지금 상태로 끝나면 남는 0회 학생 ' + zeroAfter + '명 → 남은 ' + remAfter + '회 동안 회당 최소 ' + Math.ceil(zeroAfter / remAfter) + '명';
+      else foot = '오늘이 마지막 수업입니다. 아직 0회인 학생 ' + zeroAfter + '명';
+      set(p.firstToday + ' / ' + p.target + '명', '오늘 선정한 첫 질문자 / 이번 수업 최소 목표', sub, foot,
+        p.firstToday / p.target, p.firstToday >= p.target);
+    }
+
+    function renderList() {
+      const f = FILTERS.find(x => x.key === filter);
+      let qs = data.questions.filter(f.match);
+      const byTime = (a, b) => a.ts - b.ts;
+      const order = $('sort').value === 'fair'
+        ? (a, b) => (a.pastSelected + a.todaySelected) - (b.pastSelected + b.todaySelected) || byTime(a, b)
+        : byTime;
+      // 선정된 질문은 선정한 순서대로 맨 위에, 나머지는 선택한 정렬 기준대로
+      const pinned = qs.filter(q => q.status === STATUS.SELECTED).sort(byTime);
+      qs = pinned.concat(qs.filter(q => q.status !== STATUS.SELECTED).sort(order));
+      if (!qs.length) {
+        $('list').innerHTML = '<div class="empty">' + (filter === 'active' ? '대기 중인 질문이 없습니다.' : '해당하는 질문이 없습니다.') + '</div>';
+        return;
+      }
+      $('list').innerHTML = qs.map(q => {
+        const cls = { [STATUS.SELECTED]: 'selected', [STATUS.DONE]: 'done', [STATUS.HIDDEN]: 'hidden-q' }[q.status] || '';
+        const badges =
+          (q.pastSelected === 0
+            ? '<span class="badge first">지난 선정 0회 · 첫 기회</span>'
+            : '<span class="badge">지난 선정 ' + q.pastSelected + '회</span>') +
+          (q.status === STATUS.WAITING && q.todaySelected > 0 ? '<span class="badge today">오늘 이미 선정 ' + q.todaySelected + '회</span>' : '');
+        return '<article class="q ' + cls + '">' +
+          '<div class="meta"><strong>' + esc(q.name) + '</strong><span class="sid">' + esc(q.studentId) + '</span>' +
+          badges + '<span class="time">' + esc(q.time) + '</span></div>' +
+          '<p class="text">' + esc(q.text) + '</p>' +
+          '<div class="actions">' + actionsFor(q) + '</div>' +
+          '</article>';
+      }).join('');
+    }
+
+    function actionsFor(q) {
+      const b = (status, label, cls) =>
+        '<button data-id="' + esc(q.id) + '" data-status="' + status + '" class="' + (cls || '') + '">' + label + '</button>';
+      switch (q.status) {
+        case STATUS.WAITING: return b(STATUS.SELECTED, '⭐ 선정', 'star') + b(STATUS.HIDDEN, '숨김');
+        case STATUS.SELECTED: return b(STATUS.DONE, '✓ 답변 완료', 'ok') + b(STATUS.WAITING, '선정 취소');
+        case STATUS.DONE: return b(STATUS.SELECTED, '선정으로 되돌리기');
+        case STATUS.HIDDEN: return b(STATUS.WAITING, '복원');
+        default: return b(STATUS.WAITING, '대기로');
+      }
+    }
+
+    function renderRoster() {
+      const rows = data.roster.slice().sort((a, b) =>
+        (a.pastSelected + a.todaySelected) - (b.pastSelected + b.todaySelected) || String(a.id).localeCompare(String(b.id)));
+      $('roster-body').innerHTML = rows.map(r =>
+        '<tr><td>' + esc(r.id) + '</td><td>' + esc(r.name) + '</td>' +
+        '<td class="num">' + r.pastSelected + '</td><td class="num">' + r.todaySelected + '</td>' +
+        '<td class="num"><b>' + (r.pastSelected + r.todaySelected) + '</b></td></tr>'
+      ).join('');
+    }
+
+    async function refresh() {
+      if (pending || inflight) return;
+      inflight = true;
+      const v = version;
+      try {
+        const next = await call('getDashboard', KEY);
+        if (pending || v !== version) return;
+        data = next;
+        lastOk = Date.now();
+        showError('');
+        render();
+      } catch (e) {
+        showError('불러오기 실패: ' + errText(e));
+      } finally {
+        inflight = false;
+      }
+    }
+
+    function tickClock() {
+      if (!lastOk) return;
+      const sec = Math.round((Date.now() - lastOk) / 1000);
+      $('updated').textContent = sec < 3 ? '실시간 갱신 중' : sec + '초 전 갱신';
+      $('live').classList.toggle('stale', sec > 20);
+    }
+
+    async function changeStatus(id, status) {
+      const q = data.questions.find(x => x.id === id);
+      if (!q) return;
+      const wasSel = q.status === STATUS.SELECTED || q.status === STATUS.DONE;
+      const isSel = status === STATUS.SELECTED || status === STATUS.DONE;
+      const delta = (isSel ? 1 : 0) - (wasSel ? 1 : 0);
+      // 화면을 먼저 갱신하고 서버에 반영
+      q.status = status;
+      if (q.pastSelected === 0 && delta !== 0) {
+        const before = q.todaySelected, after = before + delta;
+        if (before === 0 && after > 0) data.plan.firstToday++;
+        if (before > 0 && after === 0) data.plan.firstToday--;
+      }
+      data.questions.forEach(x => { if (x.studentId === q.studentId) x.todaySelected += delta; });
+      const r = data.roster.find(x => x.id === q.studentId);
+      if (r) r.todaySelected += delta;
+      render();
+      pending++;
+      version++;
+      try {
+        await call('setStatus', KEY, id, status);
+      } catch (e) {
+        showError('변경 실패: ' + errText(e));
+      } finally {
+        pending--;
+        inflight = false;
+        refresh();
+      }
+    }
+
+    $('list').addEventListener('click', e => {
+      const btn = e.target.closest('button[data-id]');
+      if (btn) changeStatus(btn.dataset.id, btn.dataset.status);
+    });
+    $('filter-seg').addEventListener('click', e => {
+      const btn = e.target.closest('button[data-filter]');
+      if (!btn) return;
+      filter = btn.dataset.filter;
+      render();
+    });
+    $('sort').addEventListener('change', renderList);
+    $('view-seg').addEventListener('click', e => {
+      const btn = e.target.closest('button[data-view]');
+      if (!btn) return;
+      document.querySelectorAll('#view-seg button').forEach(b => b.classList.toggle('on', b === btn));
+      $('questions-view').hidden = btn.dataset.view !== 'questions';
+      $('roster-view').hidden = btn.dataset.view !== 'roster';
+    });
+
+    $('open-btn').addEventListener('click', async () => {
+      const next = !data.open;
+      // 실수로 마감하지 않도록 3초 안에 한 번 더 눌러야 마감 (브라우저 확인창은 환경에 따라 차단됨)
+      if (!next && Date.now() >= closeArmedUntil) {
+        closeArmedUntil = Date.now() + 3000;
+        render();
+        setTimeout(render, 3100);
+        return;
+      }
+      closeArmedUntil = 0;
+      data.open = next;
+      render();
+      pending++;
+      version++;
+      try {
+        await call('setOpen', KEY, next);
+      } catch (e) {
+        showError('변경 실패: ' + errText(e));
+      } finally {
+        pending--;
+        inflight = false;
+        refresh();
+      }
+    });
+
+    $('qr-btn').addEventListener('click', () => {
+      if (!data) return;
+      // GitHub Pages에서 열었으면 같은 사이트의 학생 페이지, 아니면 서버가 알려준 학생 주소
+      const url = location.hostname.endsWith('github.io') ? new URL('./', location.href).href : data.studentUrl;
+      $('qr').innerHTML = '';
+      if (window.QRCode) new QRCode($('qr'), { text: url, width: 512, height: 512, correctLevel: QRCode.CorrectLevel.M });
+      else $('qr').textContent = 'QR 라이브러리를 불러오지 못했습니다. 아래 주소를 안내해 주세요.';
+      $('qr-url').textContent = url;
+      $('overlay').hidden = false;
+    });
+    $('overlay').addEventListener('click', () => { $('overlay').hidden = true; });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') $('overlay').hidden = true; });
+
+    refresh();
+    setInterval(refresh, 4000);
+    setInterval(tickClock, 1000);
+  </script>
+</body>
+</html>
