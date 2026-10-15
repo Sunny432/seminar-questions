@@ -302,7 +302,7 @@
         state = await callWith(retryNote('ask-msg'), 'submitQuestion', $('q').value, sid(), sname());
         $('q').value = '';
         render();
-        setMsg('ask-msg', '접수되었습니다. 교수님이 선정하면 수업 중에 호명됩니다.', 'ok');
+        setMsg('ask-msg', '질문이 접수되었습니다. 수업 중 교수님이 확인하실 예정입니다.', 'ok');
       } catch (e) {
         if (!e.uncertain) {
           setMsg('ask-msg', errText(e), 'err');
@@ -314,7 +314,7 @@
           if (state && state.mine.some(m => m.text === text)) {
             $('q').value = '';
             updateCount();
-            setMsg('ask-msg', '접수되었습니다. 교수님이 선정하면 수업 중에 호명됩니다.', 'ok');
+            setMsg('ask-msg', '질문이 접수되었습니다. 수업 중 교수님이 확인하실 예정입니다.', 'ok');
           } else {
             setMsg('ask-msg', '접수되지 않았습니다. 잠시 후 다시 제출해 주세요.', 'err');
           }
