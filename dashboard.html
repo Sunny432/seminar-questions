@@ -202,32 +202,44 @@
     // Apps Script 웹앱(Code.gs 의 doPost)에 요청. text/plain 본문이라 CORS 사전 요청이 없다.
     const API_URL = 'https://script.google.com/macros/s/AKfycbyMjR0euIFOc_cl6aO2qeAB9EEREH8fs4KpbxBGlcxJEty3IWT3nxEQmZ3P5f3h2RA6hQ/exec';
     // 접속이 몰려 Google이 요청을 거절하면(오류 페이지 또는 '동시 호출이 너무 많음') 잠시 뒤 자동으로 다시 시도한다.
-    // 네트워크 오류는 읽기 요청만 재시도 (제출이 실제로는 처리됐는데 두 번 들어가는 일을 막기 위해)
-    const RETRY_DELAYS = [1000, 2000, 4000, 6000, 8000];
+    // 요청마다 제한 시간을 둬서, 서버가 느릴 때(배포 직후 등) 한없이 기다리지 않게 한다.
+    // 시간 초과·네트워크 오류는 서버가 이미 처리했을 수도 있으므로 읽기 요청만 다시 보낸다 (제출이 두 번 들어가지 않게).
+    const RETRY_DELAYS = [1000, 2000, 4000, 6000];
+    const TIMEOUT_MS = 15000;
     const OVERLOAD = /너무 많|몰리고|too many|invoked/i;
-    async function call(fn, ...args) {
+    // onRetry(n, max): 다시 시도할 때마다 불린다 (화면에 진행 상황 표시용)
+    async function callWith(onRetry, fn, ...args) {
       if (window.DEMO_API) return window.DEMO_API(fn, args);
       const readOnly = /^get/.test(fn) || fn === 'linkStudent';
       for (let attempt = 0; ; attempt++) {
-        let out = null, netErr = false;
+        let out = null, netErr = false, timedOut = false;
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => { timedOut = true; ctrl.abort(); }, TIMEOUT_MS);
         try {
-          const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ fn, args }) });
+          const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ fn, args }), signal: ctrl.signal });
           const text = await res.text();
-          try { out = JSON.parse(text); } catch (e) { /* HTML 오류 페이지 = 과부하 */ }
+          try { out = JSON.parse(text); } catch (e) { /* HTML 오류 페이지 = 과부하이거나 배포 직후 */ }
         } catch (e) {
           netErr = true;
+        } finally {
+          clearTimeout(timer);
         }
         if (out && out.ok) return out.data;
         if (out && !OVERLOAD.test(out.error || '')) throw new Error(out.error);
         const retry = netErr ? readOnly : true;
         if (!retry || attempt >= RETRY_DELAYS.length) {
-          throw new Error(netErr
-            ? '서버에 연결하지 못했습니다. 인터넷 연결을 확인하고 다시 시도해 주세요.'
+          const err = new Error(timedOut
+            ? '서버 응답이 너무 늦습니다. 잠시 후 다시 시도해 주세요.'
+            : netErr ? '서버에 연결하지 못했습니다. 인터넷 연결을 확인하고 다시 시도해 주세요.'
             : '접속이 몰려 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.');
+          err.uncertain = netErr && !readOnly; // 쓰기 요청이 서버에서 처리됐는지 알 수 없음
+          throw err;
         }
+        if (onRetry) onRetry(attempt + 2, RETRY_DELAYS.length + 1);
         await new Promise(r => setTimeout(r, RETRY_DELAYS[attempt] * (0.7 + Math.random() * 0.6)));
       }
     }
+    const call = (fn, ...args) => callWith(null, fn, ...args);
     function errText(e) { return String((e && e.message) || e).replace(/^(Error|Exception):\s*/, ''); }
     function esc(s) {
       return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
