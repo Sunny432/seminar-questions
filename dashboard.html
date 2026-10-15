@@ -192,7 +192,7 @@
     const API_URL = 'https://script.google.com/macros/s/AKfycbyMjR0euIFOc_cl6aO2qeAB9EEREH8fs4KpbxBGlcxJEty3IWT3nxEQmZ3P5f3h2RA6hQ/exec';
     // 접속이 몰려 Google이 요청을 거절하면(오류 페이지 또는 '동시 호출이 너무 많음') 잠시 뒤 자동으로 다시 시도한다.
     // 네트워크 오류는 읽기 요청만 재시도 (제출이 실제로는 처리됐는데 두 번 들어가는 일을 막기 위해)
-    const RETRY_DELAYS = [800, 1600, 3200, 5000];
+    const RETRY_DELAYS = [1000, 2000, 4000, 6000, 8000];
     const OVERLOAD = /너무 많|몰리고|too many|invoked/i;
     async function call(fn, ...args) {
       if (window.DEMO_API) return window.DEMO_API(fn, args);
