@@ -80,6 +80,11 @@
     .tag { font-size: .68rem; font-weight: 700; padding: 1px 6px; border-radius: 99px; background: #eef0f3; color: var(--muted); }
     .tag.first { background: var(--ok-bg); color: var(--ok); }
     .tag.today { background: var(--star-bg); color: var(--star); }
+    .tag.ai { background: #eef0ff; color: #3b3fb6; }
+    .tag.ai.hi { background: #3b3fb6; color: #fff; }
+    .tag.ai.lo { background: #f1f1f3; color: var(--faint); }
+    .ai-why { margin-top: 2px; font-size: .74rem; color: #4a4fa8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ai-note { font-size: .8rem; color: var(--muted); background: var(--card); border: 1px dashed var(--line); border-radius: 10px; padding: 6px 10px; margin: 0 0 8px; }
     .text { margin: 4px 0 0; font-size: 1.02rem; line-height: 1.45; word-break: keep-all; overflow-wrap: anywhere; cursor: pointer;
       display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
     .text.open { display: block; }
@@ -174,7 +179,7 @@
 
     let data = null;
     let view = 'active';      // FILTERS 의 key 또는 'roster'
-    let sortMode = pref('sort') || 'fair';
+    let sortMode = pref('sort') || 'ai';
     let pending = 0;          // 진행 중인 조작 수
     let version = 0;          // 조작할 때마다 증가 → 조작 전에 요청한 응답은 버림
     let inflight = false;
@@ -284,7 +289,14 @@
 
     const total = q => q.pastSelected + q.todaySelected;
     const byTime = (a, b) => a.ts - b.ts;
-    const bySort = (a, b) => sortMode === 'fair' ? total(a) - total(b) || byTime(a, b) : byTime(a, b);
+    const aiOf = q => (q.aiScore === null || q.aiScore === undefined ? -1 : q.aiScore);
+    // AI 추천 순: 점수 높은 순 → 같으면 선정 적은 학생 → 접수 순 (AI가 꺼져 있으면 선정 적은 학생 먼저)
+    const bySort = (a, b) => {
+      const mode = sortMode === 'ai' && !(data.ai && data.ai.enabled) ? 'fair' : sortMode;
+      if (mode === 'ai') return aiOf(b) - aiOf(a) || total(a) - total(b) || byTime(a, b);
+      if (mode === 'fair') return total(a) - total(b) || aiOf(b) - aiOf(a) || byTime(a, b);
+      return byTime(a, b);
+    };
 
     function renderList() {
       const f = FILTERS.find(x => x.key === view);
@@ -300,11 +312,14 @@
       if (picked.length) {
         html += '<div class="sec"><h2>호명 순서<span>' + picked.length + '</span></h2></div>' + picked.map((q, i) => card(q, i)).join('');
       }
+      const aiOn = data.ai && data.ai.enabled;
+      const opt = (v, label) => '<option value="' + v + '"' + (sortMode === v ? ' selected' : '') + '>' + label + '</option>';
       html += '<div class="sec"><h2>대기 중<span>' + waiting.length + '</span></h2>' +
         '<select id="sort" aria-label="정렬">' +
-        '<option value="fair"' + (sortMode === 'fair' ? ' selected' : '') + '>선정 적은 학생 먼저</option>' +
-        '<option value="time"' + (sortMode === 'time' ? ' selected' : '') + '>접수 순서</option>' +
+        (aiOn ? opt('ai', 'AI 추천 순') : '') + opt('fair', '선정 적은 학생 먼저') + opt('time', '접수 순서') +
         '</select></div>';
+      if (data.ai && data.ai.error) html += '<div class="ai-note">' + esc(data.ai.error) + '</div>';
+      else if (aiOn && waiting.some(q => q.aiScore === null)) html += '<div class="ai-note">AI가 새 질문을 평가하는 중…</div>';
       html += waiting.length ? waiting.map(q => card(q)).join('') : '<div class="empty">대기 중인 질문이 없습니다.</div>';
       $('list').innerHTML = html;
     }
@@ -317,12 +332,14 @@
       const num = pickIndex !== undefined ? '<span class="num">' + (CIRCLED[pickIndex] || pickIndex + 1) + '</span>' : '';
       const tags =
         (q.pastSelected === 0 ? '<span class="tag first">첫 질문</span>' : '<span class="tag">지난 선정 ' + q.pastSelected + '회</span>') +
-        (q.status === STATUS.WAITING && q.todaySelected > 0 ? '<span class="tag today">오늘 선정됨</span>' : '');
+        (q.status === STATUS.WAITING && q.todaySelected > 0 ? '<span class="tag today">오늘 선정됨</span>' : '') +
+        (q.aiScore ? '<span class="tag ai' + (q.aiScore >= 4 ? ' hi' : q.aiScore <= 2 ? ' lo' : '') + '">AI ' + q.aiScore + '</span>' : '');
       return '<article class="q ' + cls + '">' +
         '<div class="q-head"><div class="who">' + num + '<strong>' + esc(q.name) + '</strong>' + tags +
         '<span class="meta">' + esc(q.studentId) + ' · ' + esc(q.time) + '</span></div>' +
         '<div class="actions">' + actionsFor(q) + '</div></div>' +
         '<p class="text' + (expanded.has(q.id) ? ' open' : '') + '" data-expand="' + esc(q.id) + '">' + esc(q.text) + '</p>' +
+        (q.aiReason ? '<div class="ai-why">AI · ' + esc(q.aiReason) + '</div>' : '') +
         '</article>';
     }
 
