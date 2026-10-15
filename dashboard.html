@@ -7,95 +7,105 @@
   <title>질문 대시보드</title>
   <style>
     :root {
-      --bg: #f4f5f7; --card: #fff; --ink: #1d2433; --muted: #6b7280; --line: #e3e6eb;
-      --accent: #1f4fd1; --accent-bg: #eaf0ff;
-      --ok: #0f7b4b; --ok-bg: #e7f6ee; --star: #a15c00; --star-bg: #fff1d6;
+      --bg: #f2f3f6; --card: #fff; --ink: #161b26; --muted: #5f6675; --faint: #8a909c; --line: #e2e5ea;
+      --accent: #1f4fd1; --accent-bg: #e8eeff;
+      --ok: #0d7a49; --ok-bg: #e3f5ec; --first: #12a15c;
+      --star: #b35f00; --star-bg: #fff0d4; --star-line: #f0a500;
       --err: #b42318; --err-bg: #fdecea;
     }
+    /* 글자 크게: 모든 크기를 rem 으로 지정해 루트 크기만 바꾼다 */
+    html { font-size: 16px; }
+    html.large { font-size: 19px; }
     * { box-sizing: border-box; }
     body {
       margin: 0; background: var(--bg); color: var(--ink);
       font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
-      font-size: 16px; line-height: 1.5;
+      font-size: 1rem; line-height: 1.5; -webkit-text-size-adjust: 100%;
     }
-    .wrap { max-width: 980px; margin: 0 auto; padding: 20px 16px 60px; }
-    button { font: inherit; cursor: pointer; }
+    button { font: inherit; cursor: pointer; color: inherit; }
+    .wrap { max-width: 760px; margin: 0 auto; padding: 0 12px 48px; }
 
-    .top { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-    .top h1 { margin: 0; font-size: 22px; }
-    .top .sub { color: var(--muted); font-size: 14px; }
-    .top .controls { display: flex; gap: 8px; flex-wrap: wrap; }
-    .btn { border: 1px solid var(--line); background: var(--card); color: var(--ink); border-radius: 10px; padding: 9px 14px; font-weight: 600; }
-    .btn.open { background: var(--ok); border-color: var(--ok); color: #fff; }
-    .btn.closed { background: var(--ink); border-color: var(--ink); color: #fff; }
-    .btn.arm { background: var(--err); border-color: var(--err); color: #fff; }
-    .intake { border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; font-weight: 600; }
-    .intake.on { background: var(--ok-bg); color: var(--ok); }
-    .intake.off { background: var(--line); color: var(--muted); }
+    /* ---- 상단 (스크롤해도 고정) ---- */
+    .top { position: sticky; top: 0; z-index: 5; background: var(--bg); padding: 10px 0 8px; }
+    .top-row { display: flex; align-items: center; gap: 8px; }
+    .title { flex: 1; min-width: 0; }
+    .title h1 { margin: 0; font-size: 1.05rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .title .sub { color: var(--faint); font-size: .8rem; }
+    .live { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--ok); margin-right: 5px; vertical-align: middle; }
+    .live.stale { background: var(--err); }
+    .icon-btn { flex: none; min-width: 44px; height: 40px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); font-weight: 700; font-size: .9rem; }
+    .icon-btn.on { background: var(--accent-bg); border-color: var(--accent-bg); color: var(--accent); }
+    .intake { display: block; width: 100%; margin-top: 8px; padding: 11px 14px; border-radius: 12px; border: 0; font-weight: 700; font-size: .95rem; text-align: left; }
+    .intake.open { background: var(--ok); color: #fff; }
+    .intake.closed { background: #2b3242; color: #fff; }
+    .intake.arm { background: var(--err); color: #fff; }
+    .intake .hint { float: right; font-weight: 500; opacity: .85; }
 
-    .plan { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 18px; margin-bottom: 14px; }
-    .plan-head { display: flex; flex-wrap: wrap; gap: 4px 12px; justify-content: space-between; align-items: baseline; }
-    .plan-title { font-weight: 700; }
-    .plan-sub { color: var(--muted); font-size: 14px; }
-    .plan-main { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; margin: 6px 0 8px; }
-    .plan-main b { font-size: 30px; font-variant-numeric: tabular-nums; }
-    .plan-main span { color: var(--muted); font-size: 14px; }
-    .progress { height: 10px; background: var(--line); border-radius: 99px; overflow: hidden; }
+    .error { background: var(--err-bg); color: var(--err); border-radius: 10px; padding: 10px 12px; margin: 4px 0 10px; font-size: .9rem; }
+
+    /* ---- 전원 질문 목표 ---- */
+    .plan { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; margin: 4px 0 10px; }
+    .plan-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+    .plan-title { font-weight: 700; font-size: .95rem; }
+    .plan-main { font-size: 1.6rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+    .progress { height: 10px; background: var(--line); border-radius: 99px; overflow: hidden; margin: 6px 0 8px; }
     .progress div { height: 100%; width: 0; background: var(--accent); border-radius: 99px; transition: width .3s; }
     .plan.met .progress div { background: var(--ok); }
-    .plan-foot { margin-top: 8px; font-size: 14px; color: var(--muted); }
-    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
-    .stat { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; }
-    .stat b { display: block; font-size: 24px; }
-    .stat span { color: var(--muted); font-size: 13px; }
+    .plan.met .plan-main { color: var(--ok); }
+    .plan-foot { font-size: .82rem; color: var(--muted); }
+    .plan-foot div + div { margin-top: 2px; }
 
-    .bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-    .seg { display: inline-flex; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 3px; flex-wrap: wrap; }
-    .seg button { border: 0; background: none; padding: 7px 12px; border-radius: 8px; color: var(--muted); font-weight: 600; font-size: 14px; }
-    .seg button.on { background: var(--accent-bg); color: var(--accent); }
-    select { font: inherit; font-size: 14px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); }
+    /* ---- 탭 (한 줄, 넘치면 가로 스크롤) ---- */
+    .tabs { display: flex; gap: 6px; overflow-x: auto; padding: 2px 0 10px; scrollbar-width: none; }
+    .tabs::-webkit-scrollbar { display: none; }
+    .tabs button { flex: none; border: 1px solid var(--line); background: var(--card); border-radius: 99px; padding: 7px 13px; font-size: .88rem; font-weight: 600; color: var(--muted); }
+    .tabs button.on { background: var(--ink); border-color: var(--ink); color: #fff; }
 
-    .q { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; margin-bottom: 10px; display: grid; grid-template-columns: 1fr auto; gap: 8px 16px; align-items: start; }
-    .q.selected { border-color: #f0c26a; box-shadow: inset 4px 0 0 #f0a500; }
-    .q.done { opacity: .6; }
-    .q.hidden-q { opacity: .45; }
-    .meta { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: baseline; }
-    .meta strong { font-size: 17px; }
-    .sid, .time { color: var(--muted); font-size: 14px; }
-    .badge { font-size: 12px; font-weight: 700; padding: 2px 9px; border-radius: 99px; background: var(--line); color: var(--muted); }
-    .badge.first { background: var(--ok-bg); color: var(--ok); }
-    .badge.today { background: var(--star-bg); color: var(--star); }
-    .text { grid-column: 1 / 2; margin: 0; font-size: 18px; line-height: 1.5; word-break: keep-all; overflow-wrap: anywhere; }
-    .actions { grid-column: 2; grid-row: 1 / 3; display: flex; flex-direction: column; gap: 6px; min-width: 110px; }
-    .actions button { border: 1px solid var(--line); background: var(--card); border-radius: 10px; padding: 8px 10px; font-weight: 600; font-size: 14px; }
-    .actions .star { background: #f0a500; border-color: #f0a500; color: #fff; }
+    /* ---- 목록 ---- */
+    .sec { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 14px 2px 8px; }
+    .sec h2 { margin: 0; font-size: .95rem; }
+    .sec h2 span { color: var(--faint); font-weight: 600; margin-left: 4px; }
+    .sec select { font: inherit; font-size: .8rem; padding: 5px 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--muted); }
+
+    .q { position: relative; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px 12px 16px; margin-bottom: 10px; overflow: hidden; }
+    .q.first::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--first); }
+    .q.selected { border-color: var(--star-line); background: #fffaf0; }
+    .q.done, .q.hidden-q { opacity: .55; }
+    .q-head { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; }
+    .num { display: inline-flex; align-items: center; justify-content: center; width: 1.6rem; height: 1.6rem; border-radius: 50%; background: var(--star-line); color: #fff; font-weight: 800; font-size: .85rem; }
+    .q-head strong { font-size: 1.05rem; }
+    .meta { color: var(--faint); font-size: .8rem; }
+    .tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+    .tag { font-size: .75rem; font-weight: 700; padding: 2px 8px; border-radius: 99px; background: #eef0f3; color: var(--muted); }
+    .tag.first { background: var(--ok-bg); color: var(--ok); }
+    .tag.today { background: var(--star-bg); color: var(--star); }
+    .text { margin: 8px 0 10px; font-size: 1.15rem; line-height: 1.5; word-break: keep-all; overflow-wrap: anywhere; }
+    .actions { display: grid; grid-template-columns: 2fr 1fr; gap: 8px; }
+    .actions button { min-height: 44px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); font-weight: 700; font-size: .92rem; }
+    .actions button:only-child { grid-column: 1 / -1; }
+    .actions .star { background: var(--star-line); border-color: var(--star-line); color: #fff; }
     .actions .ok { background: var(--ok); border-color: var(--ok); color: #fff; }
-    .empty { text-align: center; color: var(--muted); padding: 40px 0; }
+    .empty { text-align: center; color: var(--faint); padding: 28px 0; font-size: .9rem; }
 
-    table { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; font-size: 15px; }
-    th, td { padding: 9px 12px; text-align: left; border-bottom: 1px solid var(--line); }
-    th { background: #fafbfc; font-size: 13px; color: var(--muted); }
-    td.num { text-align: right; font-variant-numeric: tabular-nums; }
+    /* ---- 수강생 현황 ---- */
+    .roster { list-style: none; margin: 0; padding: 0; background: var(--card); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+    .roster li { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-top: 1px solid var(--line); }
+    .roster li:first-child { border-top: 0; }
+    .roster .who { flex: 1; min-width: 0; }
+    .roster .who div { font-size: .78rem; color: var(--faint); }
+    .roster .cnt { font-size: 1.2rem; font-weight: 800; font-variant-numeric: tabular-nums; min-width: 2.2rem; text-align: right; }
+    .roster .cnt.zero { color: var(--first); }
+    .roster .plus { font-size: .75rem; color: var(--star); font-weight: 700; }
 
-    .error { background: var(--err-bg); color: var(--err); border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; }
-    .live { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--ok); margin-right: 6px; vertical-align: middle; }
-    .live.stale { background: var(--err); }
-
-    .overlay { position: fixed; inset: 0; background: rgba(15, 20, 30, .7); display: flex; align-items: center; justify-content: center; z-index: 10; padding: 16px; }
+    /* ---- QR ---- */
+    .overlay { position: fixed; inset: 0; background: rgba(15, 20, 30, .75); display: flex; align-items: center; justify-content: center; z-index: 10; padding: 16px; }
     .overlay[hidden] { display: none; }
-    .qrbox { background: #fff; border-radius: 18px; padding: 28px; text-align: center; max-width: 92vw; }
-    .qrbox h2 { margin: 0 0 6px; font-size: 26px; }
-    .qrbox p { margin: 0 0 16px; color: var(--muted); }
+    .qrbox { background: #fff; border-radius: 18px; padding: 22px; text-align: center; max-width: 92vw; }
+    .qrbox h2 { margin: 0 0 4px; font-size: 1.5rem; }
+    .qrbox p { margin: 0 0 14px; color: var(--muted); font-size: .9rem; }
     #qr { display: inline-block; }
-    #qr img, #qr canvas { width: min(60vh, 80vw) !important; height: auto !important; }
-    .qrurl { font-size: 13px; color: var(--muted); word-break: break-all; margin-top: 12px; }
-
-    @media (max-width: 640px) {
-      .stats { grid-template-columns: repeat(2, 1fr); }
-      .q { grid-template-columns: 1fr; }
-      .actions { grid-column: 1; grid-row: auto; flex-direction: row; flex-wrap: wrap; }
-      .actions button { flex: 1; }
-    }
+    #qr img, #qr canvas { width: min(60vh, 78vw) !important; height: auto !important; }
+    .qrurl { font-size: .75rem; color: var(--faint); word-break: break-all; margin-top: 10px; }
   </style>
   <!-- 내 컴퓨터에서 열면(localhost/파일) 가짜 서버로 동작하는 데모 모드 -->
   <script>if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || location.protocol === 'file:') document.write('<script src="demo-mock.js"><\/script>');</script>
@@ -103,57 +113,33 @@
 </head>
 <body data-key="<?= key ?>">
   <main class="wrap">
-    <div class="top">
-      <div>
-        <h1 id="course">질문 대시보드</h1>
-        <div class="sub"><span class="live" id="live"></span><span id="date"></span> · <span id="updated">불러오는 중…</span></div>
+    <header class="top">
+      <div class="top-row">
+        <div class="title">
+          <h1 id="course">질문 대시보드</h1>
+          <div class="sub"><span class="live" id="live"></span><span id="date"></span> · <span id="updated">불러오는 중…</span></div>
+        </div>
+        <button class="icon-btn" id="roster-btn" title="수강생별 선정 횟수">명단</button>
+        <button class="icon-btn" id="size-btn" title="글자 크기">가</button>
+        <button class="icon-btn" id="qr-btn" title="학생용 QR 띄우기">QR</button>
       </div>
-      <div class="controls">
-        <button class="btn" id="qr-btn">학생용 QR 띄우기</button>
-        <button class="btn closed" id="open-btn" disabled>…</button>
-      </div>
-    </div>
+      <button class="intake closed" id="open-btn" disabled>…</button>
+    </header>
 
-    <div class="intake off" id="intake">…</div>
     <div class="error" id="error" hidden></div>
 
     <section class="plan" id="plan">
-      <div class="plan-head"><span class="plan-title">전원 질문 목표</span><span class="plan-sub" id="plan-sub"></span></div>
-      <div class="plan-main"><b id="plan-main">–</b><span id="plan-label"></span></div>
+      <div class="plan-row"><span class="plan-title">오늘 첫 질문자</span><span class="plan-main" id="plan-main">–</span></div>
       <div class="progress"><div id="plan-bar"></div></div>
       <div class="plan-foot" id="plan-foot"></div>
     </section>
 
-    <div class="stats">
-      <div class="stat"><b id="s-total">0</b><span>오늘 접수</span></div>
-      <div class="stat"><b id="s-wait">0</b><span>대기 중</span></div>
-      <div class="stat"><b id="s-sel">0</b><span>오늘 선정</span></div>
-      <div class="stat"><b id="s-zero">0</b><span>아직 선정 0회인 수강생</span></div>
-    </div>
+    <nav class="tabs" id="tabs"></nav>
 
-    <div class="bar">
-      <div class="seg" id="view-seg">
-        <button data-view="questions" class="on">질문</button>
-        <button data-view="roster">수강생 현황</button>
-      </div>
-    </div>
-
-    <section id="questions-view">
-      <div class="bar">
-        <div class="seg" id="filter-seg"></div>
-        <select id="sort">
-          <option value="fair">선정 횟수 적은 학생 먼저</option>
-          <option value="time">접수 순서</option>
-        </select>
-      </div>
-      <div id="list"></div>
-    </section>
-
+    <section id="questions-view"><div id="list"></div></section>
     <section id="roster-view" hidden>
-      <table>
-        <thead><tr><th>학번</th><th>이름</th><th class="num">지난 선정</th><th class="num">오늘 선정</th><th class="num">합계</th></tr></thead>
-        <tbody id="roster-body"></tbody>
-      </table>
+      <div class="sec"><h2>수강생별 선정 횟수 <span>적은 순</span></h2></div>
+      <ul class="roster" id="roster-list"></ul>
     </section>
   </main>
 
@@ -174,22 +160,33 @@
       return new URLSearchParams(location.hash.slice(1)).get('key') || new URLSearchParams(location.search).get('key') || '';
     })();
     const STATUS = { WAITING: '대기', SELECTED: '선정', DONE: '완료', HIDDEN: '숨김' };
-    // '진행 중' = 선정된 질문(위에 고정) + 대기 질문
+    // '진행 중' = 선정된 질문(호명 순서) + 대기 질문
     const FILTERS = [
       { key: 'active', label: '진행 중', match: q => q.status === STATUS.WAITING || q.status === STATUS.SELECTED },
       { key: STATUS.DONE, label: '완료', match: q => q.status === STATUS.DONE },
       { key: STATUS.HIDDEN, label: '숨김', match: q => q.status === STATUS.HIDDEN },
       { key: 'all', label: '전체', match: () => true },
     ];
+    const CIRCLED = '①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳';
     const $ = id => document.getElementById(id);
 
     let data = null;
-    let filter = 'active';
-    let pending = 0;   // 진행 중인 조작 수
-    let version = 0;   // 조작할 때마다 증가 → 조작 전에 요청한 응답은 버림
+    let view = 'active';      // FILTERS 의 key 또는 'roster'
+    let sortMode = pref('sort') || 'fair';
+    let pending = 0;          // 진행 중인 조작 수
+    let version = 0;          // 조작할 때마다 증가 → 조작 전에 요청한 응답은 버림
     let inflight = false;
     let lastOk = 0;
-    let closeArmedUntil = 0; // 마감은 3초 안에 두 번 눌러야 실행
+    let closeArmedUntil = 0;  // 마감은 3초 안에 두 번 눌러야 실행
+
+    // 이 기기에만 기억하는 화면 설정 (정렬, 글자 크기)
+    function pref(name, value) {
+      try {
+        if (value === undefined) return localStorage.getItem('dash-' + name);
+        localStorage.setItem('dash-' + name, value);
+      } catch (e) { return null; }
+    }
+    if (pref('large') === '1') document.documentElement.classList.add('large');
 
     // Apps Script 웹앱(Code.gs 의 doPost)에 요청. text/plain 본문이라 CORS 사전 요청이 없다.
     const API_URL = 'https://script.google.com/macros/s/AKfycbyMjR0euIFOc_cl6aO2qeAB9EEREH8fs4KpbxBGlcxJEty3IWT3nxEQmZ3P5f3h2RA6hQ/exec';
@@ -215,88 +212,100 @@
       if (!data) return;
       $('course').textContent = data.course;
       $('date').textContent = data.today;
-
-      const qs = data.questions;
-      const count = s => qs.filter(q => q.status === s).length;
-      $('s-total').textContent = qs.length;
-      $('s-wait').textContent = count(STATUS.WAITING);
-      $('s-sel').textContent = count(STATUS.SELECTED) + count(STATUS.DONE);
-      $('s-zero').textContent = data.roster.filter(r => r.pastSelected + r.todaySelected === 0).length + ' / ' + data.roster.length;
+      renderIntake();
       renderPlan();
+      renderTabs();
+      $('questions-view').hidden = view === 'roster';
+      $('roster-view').hidden = view !== 'roster';
+      if (view === 'roster') renderRoster(); else renderList();
+    }
 
+    function renderIntake() {
       const ob = $('open-btn');
       ob.disabled = false;
       const armed = data.open && Date.now() < closeArmedUntil;
-      ob.className = 'btn ' + (armed ? 'arm' : data.open ? 'open' : 'closed');
-      ob.textContent = armed ? '한 번 더 누르면 마감' : data.open ? '● 접수 중 · 마감하기' : '접수 시작하기';
-      $('intake').className = 'intake ' + (data.open ? 'on' : 'off');
-      $('intake').textContent = data.open
-        ? '● 질문 접수 중 — 학생들이 지금 질문을 제출할 수 있습니다.'
-        : '접수 마감됨 — 학생 화면에서 제출이 막혀 있습니다. 질문을 받으려면 [접수 시작하기]를 누르세요.';
-
-      $('filter-seg').innerHTML = FILTERS.map(f => {
-        const n = qs.filter(f.match).length;
-        return '<button data-filter="' + f.key + '" class="' + (f.key === filter ? 'on' : '') + '">' + f.label + ' ' + n + '</button>';
-      }).join('');
-
-      renderList();
-      renderRoster();
+      ob.className = 'intake ' + (armed ? 'arm' : data.open ? 'open' : 'closed');
+      ob.innerHTML = armed
+        ? '한 번 더 누르면 마감됩니다'
+        : data.open
+          ? '● 질문 접수 중<span class="hint">눌러서 마감</span>'
+          : '○ 접수 마감됨<span class="hint">눌러서 시작</span>';
     }
 
     function renderPlan() {
       const p = data.plan;
-      const set = (main, label, sub, foot, ratio, met) => {
+      const set = (main, lines, ratio, met) => {
         $('plan-main').textContent = main;
-        $('plan-label').textContent = label;
-        $('plan-sub').textContent = sub;
-        $('plan-foot').textContent = foot;
-        $('plan-bar').style.width = Math.round(Math.min(1, ratio) * 100) + '%';
+        $('plan-foot').innerHTML = lines.filter(Boolean).map(l => '<div>' + esc(l) + '</div>').join('');
+        $('plan-bar').style.width = Math.round(Math.max(0, Math.min(1, ratio)) * 100) + '%';
         $('plan').classList.toggle('met', !!met);
       };
-      if (!p.total) return set('–', "'설정' 시트에 전체수업횟수를 입력하면 목표가 계산됩니다.", '', '', 0);
-      const sub = '남은 수업 ' + Math.max(p.remaining, 0) + '회 (오늘 포함) · 오늘 시작 기준 선정 0회 ' + p.zeroBefore + '명 / 전체 ' + data.roster.length + '명';
-      if (p.zeroBefore === 0) return set('달성', '모든 수강생이 한 번 이상 질문했습니다.', sub, '', 1, true);
+      if (!p.total) return set('–', ["'설정' 시트에 전체수업횟수를 입력하면 목표가 계산됩니다."], 0);
+      const status = '남은 수업 ' + Math.max(p.remaining, 0) + '회(오늘 포함) · 아직 0회 ' + p.zeroBefore + '명 / ' + data.roster.length + '명';
+      if (p.zeroBefore === 0) return set('달성', ['모든 수강생이 한 번 이상 질문했습니다.', status], 1, true);
       if (p.remaining <= 0) {
-        return set(p.firstToday + ' / ' + p.zeroBefore + '명', '남은 수업 횟수가 없습니다. 선정 0회 학생을 오늘 모두 선정해야 합니다.', sub, '', p.firstToday / p.zeroBefore, p.firstToday >= p.zeroBefore);
+        return set(p.firstToday + ' / ' + p.zeroBefore + '명', ['남은 수업이 없습니다. 0회 학생을 오늘 모두 선정해야 합니다.', status],
+          p.firstToday / p.zeroBefore, p.firstToday >= p.zeroBefore);
       }
       const zeroAfter = p.zeroBefore - p.firstToday;
       const remAfter = p.remaining - 1;
-      let foot;
-      if (zeroAfter <= 0) foot = '오늘로 모든 수강생이 한 번 이상 질문하게 됩니다.';
-      else if (remAfter > 0) foot = '지금 상태로 끝나면 남는 0회 학생 ' + zeroAfter + '명 → 남은 ' + remAfter + '회 동안 회당 최소 ' + Math.ceil(zeroAfter / remAfter) + '명';
-      else foot = '오늘이 마지막 수업입니다. 아직 0회인 학생 ' + zeroAfter + '명';
-      set(p.firstToday + ' / ' + p.target + '명', '오늘 선정한 첫 질문자 / 이번 수업 최소 목표', sub, foot,
-        p.firstToday / p.target, p.firstToday >= p.target);
+      let next;
+      if (zeroAfter <= 0) next = '오늘로 모든 수강생이 한 번 이상 질문하게 됩니다.';
+      else if (remAfter > 0) next = '이대로 끝나면 다음 수업부터 회당 최소 ' + Math.ceil(zeroAfter / remAfter) + '명';
+      else next = '오늘이 마지막 수업입니다.';
+      set(p.firstToday + ' / ' + p.target + '명', [status, next], p.firstToday / p.target, p.firstToday >= p.target);
     }
 
+    function renderTabs() {
+      const qs = data.questions;
+      $('tabs').innerHTML = FILTERS.map(f =>
+        '<button data-view="' + f.key + '" class="' + (view === f.key ? 'on' : '') + '">' + f.label + ' ' + qs.filter(f.match).length + '</button>'
+      ).join('');
+      $('roster-btn').classList.toggle('on', view === 'roster');
+    }
+
+    const total = q => q.pastSelected + q.todaySelected;
+    const byTime = (a, b) => a.ts - b.ts;
+    const bySort = (a, b) => sortMode === 'fair' ? total(a) - total(b) || byTime(a, b) : byTime(a, b);
+
     function renderList() {
-      const f = FILTERS.find(x => x.key === filter);
-      let qs = data.questions.filter(f.match);
-      const byTime = (a, b) => a.ts - b.ts;
-      const order = $('sort').value === 'fair'
-        ? (a, b) => (a.pastSelected + a.todaySelected) - (b.pastSelected + b.todaySelected) || byTime(a, b)
-        : byTime;
-      // 선정된 질문은 선정한 순서대로 맨 위에, 나머지는 선택한 정렬 기준대로
-      const pinned = qs.filter(q => q.status === STATUS.SELECTED).sort(byTime);
-      qs = pinned.concat(qs.filter(q => q.status !== STATUS.SELECTED).sort(order));
-      if (!qs.length) {
-        $('list').innerHTML = '<div class="empty">' + (filter === 'active' ? '대기 중인 질문이 없습니다.' : '해당하는 질문이 없습니다.') + '</div>';
+      const f = FILTERS.find(x => x.key === view);
+      const qs = data.questions.filter(f.match);
+      if (view !== 'active') {
+        $('list').innerHTML = qs.length ? qs.sort(bySort).map(q => card(q)).join('') : '<div class="empty">해당하는 질문이 없습니다.</div>';
         return;
       }
-      $('list').innerHTML = qs.map(q => {
-        const cls = { [STATUS.SELECTED]: 'selected', [STATUS.DONE]: 'done', [STATUS.HIDDEN]: 'hidden-q' }[q.status] || '';
-        const badges =
-          (q.pastSelected === 0
-            ? '<span class="badge first">지난 선정 0회 · 첫 기회</span>'
-            : '<span class="badge">지난 선정 ' + q.pastSelected + '회</span>') +
-          (q.status === STATUS.WAITING && q.todaySelected > 0 ? '<span class="badge today">오늘 이미 선정 ' + q.todaySelected + '회</span>' : '');
-        return '<article class="q ' + cls + '">' +
-          '<div class="meta"><strong>' + esc(q.name) + '</strong><span class="sid">' + esc(q.studentId) + '</span>' +
-          badges + '<span class="time">' + esc(q.time) + '</span></div>' +
-          '<p class="text">' + esc(q.text) + '</p>' +
-          '<div class="actions">' + actionsFor(q) + '</div>' +
-          '</article>';
-      }).join('');
+      // 진행 중: 호명 순서(선정한 순) → 대기 중(선택한 정렬)
+      const picked = qs.filter(q => q.status === STATUS.SELECTED).sort(byTime);
+      const waiting = qs.filter(q => q.status === STATUS.WAITING).sort(bySort);
+      let html = '';
+      if (picked.length) {
+        html += '<div class="sec"><h2>호명 순서<span>' + picked.length + '</span></h2></div>' + picked.map((q, i) => card(q, i)).join('');
+      }
+      html += '<div class="sec"><h2>대기 중<span>' + waiting.length + '</span></h2>' +
+        '<select id="sort" aria-label="정렬">' +
+        '<option value="fair"' + (sortMode === 'fair' ? ' selected' : '') + '>선정 적은 학생 먼저</option>' +
+        '<option value="time"' + (sortMode === 'time' ? ' selected' : '') + '>접수 순서</option>' +
+        '</select></div>';
+      html += waiting.length ? waiting.map(q => card(q)).join('') : '<div class="empty">대기 중인 질문이 없습니다.</div>';
+      $('list').innerHTML = html;
+    }
+
+    function card(q, pickIndex) {
+      const cls = [
+        q.pastSelected === 0 ? 'first' : '',
+        { [STATUS.SELECTED]: 'selected', [STATUS.DONE]: 'done', [STATUS.HIDDEN]: 'hidden-q' }[q.status] || '',
+      ].join(' ');
+      const num = pickIndex !== undefined ? '<span class="num">' + (CIRCLED[pickIndex] || pickIndex + 1) + '</span>' : '';
+      const tags =
+        (q.pastSelected === 0 ? '<span class="tag first">첫 질문</span>' : '<span class="tag">지난 선정 ' + q.pastSelected + '회</span>') +
+        (q.status === STATUS.WAITING && q.todaySelected > 0 ? '<span class="tag today">오늘 이미 선정됨</span>' : '');
+      return '<article class="q ' + cls + '">' +
+        '<div class="q-head">' + num + '<strong>' + esc(q.name) + '</strong><span class="meta">' + esc(q.studentId) + ' · ' + esc(q.time) + '</span></div>' +
+        '<div class="tags">' + tags + '</div>' +
+        '<p class="text">' + esc(q.text) + '</p>' +
+        '<div class="actions">' + actionsFor(q) + '</div>' +
+        '</article>';
     }
 
     function actionsFor(q) {
@@ -312,13 +321,13 @@
     }
 
     function renderRoster() {
-      const rows = data.roster.slice().sort((a, b) =>
-        (a.pastSelected + a.todaySelected) - (b.pastSelected + b.todaySelected) || String(a.id).localeCompare(String(b.id)));
-      $('roster-body').innerHTML = rows.map(r =>
-        '<tr><td>' + esc(r.id) + '</td><td>' + esc(r.name) + '</td>' +
-        '<td class="num">' + r.pastSelected + '</td><td class="num">' + r.todaySelected + '</td>' +
-        '<td class="num"><b>' + (r.pastSelected + r.todaySelected) + '</b></td></tr>'
-      ).join('');
+      const rows = data.roster.slice().sort((a, b) => total(a) - total(b) || String(a.id).localeCompare(String(b.id)));
+      $('roster-list').innerHTML = rows.map(r => {
+        const t = total(r);
+        return '<li><div class="who"><strong>' + esc(r.name) + '</strong><div>' + esc(r.id) + '</div></div>' +
+          (r.todaySelected ? '<span class="plus">오늘 +' + r.todaySelected + '</span>' : '') +
+          '<span class="cnt' + (t === 0 ? ' zero' : '') + '">' + t + '회</span></li>';
+      }).join('');
     }
 
     async function refresh() {
@@ -342,7 +351,7 @@
     function tickClock() {
       if (!lastOk) return;
       const sec = Math.round((Date.now() - lastOk) / 1000);
-      $('updated').textContent = sec < 3 ? '실시간 갱신 중' : sec + '초 전 갱신';
+      $('updated').textContent = sec < 3 ? '실시간' : sec + '초 전';
       $('live').classList.toggle('stale', sec > 20);
     }
 
@@ -380,19 +389,17 @@
       const btn = e.target.closest('button[data-id]');
       if (btn) changeStatus(btn.dataset.id, btn.dataset.status);
     });
-    $('filter-seg').addEventListener('click', e => {
-      const btn = e.target.closest('button[data-filter]');
-      if (!btn) return;
-      filter = btn.dataset.filter;
-      render();
+    $('list').addEventListener('change', e => {
+      if (e.target.id !== 'sort') return;
+      sortMode = e.target.value;
+      pref('sort', sortMode);
+      renderList();
     });
-    $('sort').addEventListener('change', renderList);
-    $('view-seg').addEventListener('click', e => {
+    $('tabs').addEventListener('click', e => {
       const btn = e.target.closest('button[data-view]');
       if (!btn) return;
-      document.querySelectorAll('#view-seg button').forEach(b => b.classList.toggle('on', b === btn));
-      $('questions-view').hidden = btn.dataset.view !== 'questions';
-      $('roster-view').hidden = btn.dataset.view !== 'roster';
+      view = btn.dataset.view;
+      render();
     });
 
     $('open-btn').addEventListener('click', async () => {
@@ -400,8 +407,8 @@
       // 실수로 마감하지 않도록 3초 안에 한 번 더 눌러야 마감 (브라우저 확인창은 환경에 따라 차단됨)
       if (!next && Date.now() >= closeArmedUntil) {
         closeArmedUntil = Date.now() + 3000;
-        render();
-        setTimeout(render, 3100);
+        renderIntake();
+        setTimeout(renderIntake, 3100);
         return;
       }
       closeArmedUntil = 0;
@@ -419,6 +426,19 @@
         refresh();
       }
     });
+
+    $('roster-btn').addEventListener('click', () => {
+      view = view === 'roster' ? 'active' : 'roster';
+      render();
+      window.scrollTo(0, 0);
+    });
+
+    $('size-btn').addEventListener('click', () => {
+      const large = document.documentElement.classList.toggle('large');
+      $('size-btn').classList.toggle('on', large);
+      pref('large', large ? '1' : '0');
+    });
+    $('size-btn').classList.toggle('on', document.documentElement.classList.contains('large'));
 
     $('qr-btn').addEventListener('click', () => {
       if (!data) return;
