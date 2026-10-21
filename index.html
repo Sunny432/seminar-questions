@@ -22,6 +22,9 @@
     .eyebrow { margin: 0; color: var(--muted); font-size: 14px; }
     h1 { margin: 2px 0 4px; font-size: 26px; }
     .who { margin: 0; color: var(--muted); font-size: 14px; min-height: 1em; }
+    .mycount { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px; margin-bottom: 14px; }
+    .mycount b { font-size: 22px; }
+    .mycount span { color: var(--muted); font-size: 13px; }
     .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 20px; margin-bottom: 14px; }
     h2 { font-size: 17px; margin: 0 0 8px; }
     label { display: block; font-weight: 600; margin: 12px 0 6px; }
@@ -79,6 +82,12 @@
       <button id="link-btn" class="primary">확인</button>
       <p class="msg" id="link-msg"></p>
     </section>
+
+    <!-- 이번 학기 내 질문(선정) 횟수: 교수님 대시보드와 같은 기준 -->
+    <div id="mycount" class="mycount" hidden>
+      <div>이번 학기 내 질문 횟수<br><span id="mycount-note"></span></div>
+      <b id="mycount-n">0회</b>
+    </div>
 
     <section id="ask" class="card" hidden>
       <div id="closed" class="notice" hidden>지금은 질문 접수 시간이 아닙니다. 접수가 시작되면 이 화면이 자동으로 열립니다.</div>
@@ -167,6 +176,12 @@
       $('course').textContent = state.course;
       $('who').textContent = state.student ? state.student.name + ' (' + state.student.id + ')' : '';
       $('switch').hidden = !state.student;
+      $('mycount').hidden = !state.student;
+      if (state.student) {
+        const n = state.asked || 0;
+        $('mycount-n').textContent = n + '회';
+        $('mycount-note').textContent = n === 0 ? '교수님께 선정된 질문 기준 · 학기 중 한 번 이상 질문해 보세요' : '교수님께 선정된 질문 기준';
+      }
 
       $('link').hidden = !!state.student;
       $('ask').hidden = !state.student;
@@ -337,7 +352,7 @@
         const next = await call('getStudentInit', sid(), sname());
         if (mySeq !== seq || busy || armedId) return;
         if (me && !next.student) return load(); // 저장된 학번이 안 보이면 load 가 한 번 더 확인한다
-        const view = s => JSON.stringify([s.open, s.maxLen, s.maxPer, s.mine]);
+        const view = s => JSON.stringify([s.open, s.maxLen, s.maxPer, s.mine, s.asked]);
         if (view(next) === view(state)) return;
         state = next;
         render();
